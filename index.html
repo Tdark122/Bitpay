@@ -260,7 +260,7 @@ const auth = getAuth(fbApp);
 const db = getFirestore(fbApp);
 
 // !! EDIT YOUR DEPOSIT ADDRESS HERE !!
-const DEPOSIT_ADDRESS = "[Your BTC address goes here]";
+const DEPOSIT_ADDRESS = "bc1q0hg63gq5a6z4g8hk89f3m0vr8lwuj87vwc6xkp";
 
 const ADMIN_EMAIL = "admin@bitpay.com";
 const STARTER = { USDT:50000, BTC:0.85, ETH:4.2, SOL:22.5, BNB:12 };
@@ -375,7 +375,8 @@ function renderOverview(){
 }
 
 function renderWallet(){
-  document.getElementById("display-addr").textContent=DEPOSIT_ADDRESS;
+  const addrEl=document.getElementById("display-addr");
+  if(addrEl) addrEl.textContent=DEPOSIT_ADDRESS;
   document.getElementById("wallet-balances").innerHTML=COINS.map(c=>{
     const b=getBal(c);
     return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2b2f36"><div style="display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:${c==="BTC"?"rgba(240,185,11,.12)":"rgba(24,144,255,.1)"};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${c==="BTC"?"#f0b90b":"#1890ff"}">${c[0]}</div><div><div style="font-size:13px;font-weight:600">${c}</div><div style="font-size:11px;color:#848e9c">${$f(P[c]||1)}</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c">${$f(b*(P[c]||1))}</div></div></div>`;
