@@ -321,7 +321,9 @@ function startPrices(){
 onAuthStateChanged(auth,async user=>{
   currentUser=user;
   if(user){
-    const snap=await getDoc(doc(db,"users",user.uid));
+    const allSnap=await getDocs(collection(db,"users"));
+const match=allSnap.docs.find(d=>d.data().email&&d.data().email.toLowerCase()===val);
+const snap={empty:!match,docs:match?[match]:[]};
     if(snap.exists())userData=snap.data();
     document.getElementById("nav-name").textContent=userData?.name||user.displayName||user.email;
     const av=document.getElementById("nav-avatar");
