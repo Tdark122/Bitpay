@@ -28,7 +28,7 @@ button{font-family:inherit;cursor:pointer}button:active{opacity:.85}
 .nav-right{display:flex;align-items:center;gap:8px}
 .avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0}
 .badge-admin{font-size:10px;background:rgba(240,185,11,.15);color:#f0b90b;border:1px solid rgba(240,185,11,.3);border-radius:4px;padding:2px 7px;font-weight:600;display:none}
-.inbox-badge{position:absolute;top:8px;right:2px;width:15px;height:15px;border-radius:50%;background:#f6465d;font-size:9px;font-weight:900;color:#fff;display:none;align-items:center;justify-content:center;pointer-events:none}
+.inbox-badge{position:absolute;top:8px;right:2px;width:15px;height:15px;border-radius:50%;background:#f6465d;font-size:9px;font-weight:900;color:#fff;display:none;align-items:center;justify-content:center}
 .logout-btn{background:transparent;border:1px solid #2b2f36;border-radius:6px;padding:5px 10px;color:#848e9c;font-size:11px}
 .main{max-width:1060px;margin:0 auto;padding:24px 16px}
 .tab-panel{display:none;animation:fadeIn .35s ease}
@@ -52,7 +52,8 @@ button{font-family:inherit;cursor:pointer}button:active{opacity:.85}
 .inbox-read{background:#1e2026;border:1px solid #2b2f36;border-radius:12px;padding:13px 16px;display:flex;gap:14px;align-items:center;margin-bottom:8px;opacity:.65}
 .deposit-addr{background:#181a20;border:1px solid rgba(240,185,11,.3);border-radius:10px;padding:18px;margin-top:14px}
 .addr-text{font-size:13px;color:#eaecef;word-break:break-all;letter-spacing:.04em;line-height:1.8;margin-bottom:14px;font-family:"Courier New",monospace}
-.copy-btn{display:flex;align-items:center;gap:7px;background:rgba(240,185,11,.1);border:1px solid rgba(240,185,11,.25);border-radius:7px;padding:8px 14px;color:#f0b90b;font-size:12px;font-weight:600;transition:all .2s}
+.copy-btn{display:flex;align-items:center;gap:7px;background:rgba(240,185,11,.1);border:1px solid rgba(240,185,11,.25);border-radius:7px;padding:8px 14px;color:#f0b90b;font-size:12px;font-weight:600;transition:all .2s;cursor:pointer}
+.copy-btn:hover{background:rgba(240,185,11,.15);border-color:rgba(240,185,11,.35)}
 .copy-btn.done{background:rgba(14,203,129,.15);border-color:rgba(14,203,129,.35);color:#0ecb81}
 .price-card{background:#181a20;border:1px solid #2b2f36;border-radius:10px;padding:16px}
 .auth-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
@@ -62,7 +63,7 @@ button{font-family:inherit;cursor:pointer}button:active{opacity:.85}
 .auth-tab.active{background:#f0b90b;color:#000}
 .form-group{margin-bottom:18px}
 .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
-#toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);border:1px solid;border-radius:8px;padding:11px 20px;font-size:13px;z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+#toast{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);border:1px solid;border-radius:8px;padding:11px 20px;font-size:13px;z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.3)}
 .toast-in{animation:toastIn .3s ease}
 
 @media(max-width:768px){
@@ -221,7 +222,7 @@ button{font-family:inherit;cursor:pointer}button:active{opacity:.85}
             <div id="send-recipient-box" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid #2b2f36;border-radius:8px;font-size:13px"></div>
           </div>
           <div class="grid-send" style="margin-bottom:14px">
-            <div><label class="lbl">Coin</label><select id="send-coin" class="inp" style="cursor:pointer" onchange="updateSendUSD()"><option>USDT</option><option>BTC</option><option>ETH</option><option>BNB</option><option>SOL</option></select></div>
+            <div><label class="lbl">Coin</label><select id="send-coin" class="inp" style="cursor:pointer" onchange="updateSendUSD()"><option>USDT</option><option>BTC</option><option>ETH</option><option>SOL</option><option>BNB</option></select></div>
             <div><label class="lbl" id="send-amt-lbl">Amount</label><input id="send-amount" class="inp" type="number" placeholder="0.00" oninput="updateSendUSD()"/></div>
           </div>
           <div id="send-usd-est" style="display:none;background:#181a20;border-radius:8px;padding:11px;font-size:12px;color:#848e9c;margin-bottom:14px"></div>
@@ -321,9 +322,7 @@ function startPrices(){
 onAuthStateChanged(auth,async user=>{
   currentUser=user;
   if(user){
-    const allSnap=await getDocs(collection(db,"users"));
-const match=allSnap.docs.find(d=>d.data().email&&d.data().email.toLowerCase()===val);
-const snap={empty:!match,docs:match?[match]:[]};
+    const snap=await getDoc(doc(db,"users",user.uid));
     if(snap.exists())userData=snap.data();
     document.getElementById("nav-name").textContent=userData?.name||user.displayName||user.email;
     const av=document.getElementById("nav-avatar");
@@ -367,12 +366,12 @@ function renderOverview(){
   document.getElementById("hero-email").textContent=currentUser.email;
   document.getElementById("balance-cards").innerHTML=COINS.map(c=>{
     const b=getBal(c);
-    return`<div class="card-sm"><div style="font-size:11px;color:${c==="BTC"?"#f0b90b":"#848e9c"};font-weight:600;margin-bottom:6px">${c}</div><div style="font-size:15px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c;margin-top:3px">${$f(b*(P[c]||1))}</div></div>`;
+    return`<div class="card-sm"><div style="font-size:11px;color:${c==="BTC"?"#f0b90b":"#848e9c"};font-weight:600;margin-bottom:6px">${c}</div><div style="font-size:15px;font-weight:700">${cf(b,c)}</div></div>`;
   }).join("");
   document.getElementById("market-cards").innerHTML=["BTC","ETH","BNB","SOL"].map(c=>{
     const chg=((Math.random()-.48)*5).toFixed(2);
     const pos=parseFloat(chg)>=0;
-    return`<div class="price-card"><div style="font-size:12px;color:#848e9c;margin-bottom:8px">${c}/USDT</div><div id="price-${c}" style="font-size:20px;font-weight:700">${$f(P[c])}</div><div style="font-size:12px;color:${pos?"#0ecb81":"#f6465d"};margin-top:4px">${pos?"&#9650;":"&#9660;"} ${Math.abs(chg)}%</div></div>`;
+    return`<div class="price-card"><div style="font-size:12px;color:#848e9c;margin-bottom:8px">${c}/USDT</div><div id="price-${c}" style="font-size:20px;font-weight:700">${$f(P[c])}</div><div style="font-size:12px;color:${pos?"#0ecb81":"#f6465d"};margin-top:6px">${pos?"+":""}${chg}%</div></div>`;
   }).join("");
 }
 
@@ -381,7 +380,7 @@ function renderWallet(){
   if(addrEl) addrEl.textContent=DEPOSIT_ADDRESS;
   document.getElementById("wallet-balances").innerHTML=COINS.map(c=>{
     const b=getBal(c);
-    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2b2f36"><div style="display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:${c==="BTC"?"rgba(240,185,11,.12)":"rgba(24,144,255,.1)"};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${c==="BTC"?"#f0b90b":"#1890ff"}">${c[0]}</div><div><div style="font-size:13px;font-weight:600">${c}</div><div style="font-size:11px;color:#848e9c">${$f(P[c]||1)}</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c">${$f(b*(P[c]||1))}</div></div></div>`;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2b2f36"><div style="display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:${avc(c)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">${c.slice(0,1)}</div><div><div style="font-size:13px;font-weight:600">${c}</div><div style="font-size:11px;color:#848e9c">Balance</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700">${cf(b,c)}</div><div style="font-size:11px;color:#848e9c">${$f(b*(P[c]||1))}</div></div></div>`;
   }).join("");
 }
 
@@ -407,8 +406,8 @@ function renderInbox(){
   const el=document.getElementById("inbox-list");
   if(!received.length){el.innerHTML=`<div style="background:#1e2026;border:1px solid #2b2f36;border-radius:14px;padding:48px;text-align:center;color:#848e9c;font-size:13px">No incoming transfers yet</div>`;return;}
   el.innerHTML=[
-    ...unread.map(tx=>`<div class="inbox-new"><div style="width:40px;height:40px;border-radius:10px;background:rgba(14,203,129,.1);border:1px solid rgba(14,203,129,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">↓</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:#0ecb81">Received from ${tx.fromName}</div><div style="font-size:11px;color:#848e9c">${tx.from} · ${new Date(tx.time).toLocaleString()}</div>${tx.note?`<div style="font-size:11px;color:#848e9c;font-style:italic;margin-top:2px">"${tx.note}"</div>`:""}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:15px;font-weight:700;color:#0ecb81">+${cf(tx.amount,tx.coin)}</div><div style="font-size:11px;color:#848e9c">${$f(tx.usd)}</div><button class="btn-outline" style="margin-top:6px;font-size:10px" onclick="markRead('${tx.id}')">Dismiss</button></div></div>`),
-    ...received.filter(t=>t.read).map(tx=>`<div class="inbox-read"><div style="width:36px;height:36px;border-radius:10px;background:rgba(14,203,129,.06);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0ecb81;flex-shrink:0">↓</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:#848e9c">From ${tx.fromName}</div><div style="font-size:11px;color:#848e9c">${new Date(tx.time).toLocaleString()}</div>${tx.note?`<div style="font-size:11px;color:#848e9c;font-style:italic">"${tx.note}"</div>`:""}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:13px;font-weight:700">+${cf(tx.amount,tx.coin)}</div><div style="font-size:11px;color:#848e9c">${$f(tx.usd)}</div></div></div>`)
+    ...unread.map(tx=>`<div class="inbox-new"><div style="width:40px;height:40px;border-radius:10px;background:rgba(14,203,129,.1);border:1px solid rgba(14,203,129,.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#0ecb81">${ini(tx.fromName||tx.from)}</div><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px"><div style="font-size:13px;font-weight:600">${tx.fromName||tx.from}</div><div style="font-size:12px;color:#0ecb81;font-weight:600">+${cf(tx.amount,tx.coin)}</div></div><div style="font-size:12px;color:#848e9c;margin-bottom:6px">${tx.note||"No message"}</div><div style="font-size:10px;color:#474d57">${new Date(tx.time).toLocaleString()}</div></div><button class="btn-outline" onclick="markRead('${tx.id}')">Mark read</button></div>`),
+    ...received.filter(t=>t.read).map(tx=>`<div class="inbox-read"><div style="width:36px;height:36px;border-radius:10px;background:rgba(14,203,129,.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0ecb81">${ini(tx.fromName||tx.from)}</div><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px"><div style="font-size:13px;font-weight:600">${tx.fromName||tx.from}</div><div style="font-size:12px;color:#848e9c">+${cf(tx.amount,tx.coin)}</div></div><div style="font-size:11px;color:#848e9c">${tx.note||"No message"} · ${new Date(tx.time).toLocaleString()}</div></div></div>`)
   ].join("");
 }
 
@@ -475,7 +474,7 @@ window.onSendEmailChange=function(){
     } else {
       const u=snap.docs[0].data();
       resolvedRecipient={email:val,name:u.name,uid:snap.docs[0].id};
-      box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:${avc(val)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000">${ini(val)}</div><div><div style="font-size:13px;font-weight:600;color:#0ecb81">✓ ${u.name}</div><div style="font-size:11px;color:#848e9c">${val}</div></div></div>`;
+      box.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:${avc(val)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">${ini(u.name)}</div><div style="font-size:13px;font-weight:600">${u.name}</div><span style="font-size:11px;color:#0ecb81;margin-left:auto;font-weight:600">✓ Found</span></div>`;
       box.style.display="block";box.style.borderColor="rgba(14,203,129,.2)";box.style.background="rgba(14,203,129,.06)";
     }
   },600);
